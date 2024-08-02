@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <string.h>
+
+// Verifies if the entered username is correct
+int verify_user_name(const char* entered_username) {
+    const char* correct_username = "dat_wil";
+    return strcmp(correct_username, entered_username);
+}
+
+// Verifies if the entered password is correct
+int verify_user_pass(const char* entered_password) {
+    const char* correct_password = "admin";
+    return strcmp(correct_password, entered_password);
+}
+
+// Main program entry point
+int main(void) {
+    char username[256];
+    char password[100];
+    int login_status;
+
+    printf("********* ADMIN LOGIN PROMPT *********\n");
+    printf("Enter Username: ");
+    fgets(username, sizeof(username), stdin);
+
+    if (verify_user_name(username) == 0) {
+        printf("Enter Password: ");
+        fgets(password, sizeof(password), stdin);
+        login_status = verify_user_pass(password);
+
+        if (login_status == 0) {
+            printf("Login successful!\n");
+            return 0;
+        }
+        else {
+            printf("Nope, incorrect password...\n");
+        }
+    }
+    else {
+        printf("Nope, incorrect username...\n");
+    }
+
+    return 1;
+}

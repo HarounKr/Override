@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+// Prototype de la fonction pour initialiser un tableau
+void initialize_array(undefined8 *array, int length);
+
+int main(void) {
+    FILE *password_file;
+    char password_buffer[100] = {0};
+    char input_username[100] = {0};
+    char input_password[100] = {0};
+    size_t read_size;
+    int password_length;
+
+    // Initialisation des tableaux de données
+    undefined8 other_data1[14] = {0};
+    undefined8 other_data2[12] = {0};
+
+    // Ouverture du fichier contenant le mot de passe
+    password_file = fopen("/home/users/level03/.pass", "r");
+    if (password_file == NULL) {
+        fprintf(stderr, "ERROR: failed to open password file\n");
+        exit(1);
+    }
+
+    // Lecture du mot de passe dans le fichier
+    read_size = fread(password_buffer, 1, sizeof(password_buffer) - 1, password_file);
+    password_length = (int)read_size;
+    password_buffer[strcspn(password_buffer, "\n")] = '\0';  // Suppression du caractère de nouvelle ligne
+
+    if (password_length != 41) { // 0x29 en hexadécimal est 41 en décimal
+        fprintf(stderr, "ERROR: failed to read password file\n");
+        exit(1);
+    }
+
+    fclose(password_file);
+
+    // Affichage de l'interface utilisateur
+    puts("===== [ Secure Access System v1.0 ] =====");
+    puts("/****************************************\\");
+    puts("| You must login to access this system. |");
+    puts("\\****************************************/");
+    printf("--[ Username: ");
+    fgets(input_username, sizeof(input_username), stdin);
+    input_username[strcspn(input_username, "\n")] = '\0';
+
+    printf("--[ Password: ");
+    fgets(input_password, sizeof(input_password), stdin);
+    input_password[strcspn(input_password, "\n")] = '\0';
+
+    // Vérification du mot de passe
+    if (strncmp(password_buffer, input_password, 41) == 0) {
+        printf("Greetings, %s!\n", input_username);
+        system("/bin/sh");  // Accès au shell si le mot de passe est correct
+        return 0;
+    } else {
+        printf("%s does not have access!\n", input_username);
+        exit(1);
+    }
+}

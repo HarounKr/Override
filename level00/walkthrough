@@ -1,0 +1,11 @@
+1) Transférer le fichier en utilisant SCP :
+  scp -P 22222 level00@localhost:/home/users/level00/level00 .
+
+2) Les permissions du fichier level00 sont configurées avec SUID pour l'utilisateur level01 :
+  -rwsr-s---+ 1 level01 users 7280 Sep 10 2016 level00
+Ce paramètre permet au fichier d'être exécuté avec les droits de l'utilisateur level01, même si un autre utilisateur lance l'exécution.
+
+3) Analyse du binaire avec l'outil Ghidra pour comprendre son fonctionnement interne.
+
+4) Le fichier contient une condition spécifique : 
+  si la valeur saisie (récupérée via scanf) est égale à 5276, alors la commande /bin/sh est exécutée, permettant un accès au shell.
