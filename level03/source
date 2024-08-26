@@ -1,1 +1,56 @@
+int decrypt(char key) {
+    unsigned int i;
+    unsigned int length;
+    char buffer[29]; 
 
+    // Sécurité de la pile contre les débordements de buffer
+    *(_DWORD *)&buffer[17] = __readgsdword(0x14u);
+
+    // Initialisation du buffer avec une chaîne encodée
+    strcpy(buffer, "Q}|u`sfg~sf{}|a3");
+    length = strlen(buffer);
+
+    // Boucle de déchiffrement XOR de chaque caractère avec la clé
+    for (i = 0; i < length; ++i) {
+        buffer[i] ^= key;
+    }
+
+    if (!strcmp(buffer, "Congratulations!")) {
+        return system("/bin/sh");
+    } else {
+        return puts("\nInvalid Password");
+    }
+}
+
+int test(int arg1, int arg2) {
+    int result;
+    char randomValue;
+
+    int difference = arg2 - arg1;
+    if (difference >= 1 && difference <= 21) {
+        result = decrypt(difference);
+    } else {
+        randomValue = rand();
+        result = decrypt(randomValue);
+    }
+    return result;
+}
+
+
+int main(void) {
+    unsigned int seed;
+
+    seed = time(NULL);
+    srand(seed);
+
+    puts("***********************************");
+    puts("*\t\tlevel03\t\t**");
+    puts("***********************************");
+    printf("Password:");
+
+    int password;
+    scanf("%d", &password); 
+    test(password, 322424845);
+
+    return 0;
+}
