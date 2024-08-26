@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/prctl.h>
+#include <signal.h>
+
+int main(int argc, const char **argv, const char **envp) {
+    int status;                 // Variable pour stocker le statut du processus enfant
+    char buffer[128];           // Buffer pour stocker les entrées utilisateur
+    int childExited;            // Indicateur de sortie du processus enfant
+    int waitFlag;               // Flag utilisé pour les tests de statut
+    __pid_t pid;                // PID du processus
+
+    pid = fork();               // Crée un processus enfant
+    memset(buffer, 0, sizeof(buffer));  // Initialise le buffer à zéro
+    childExited = 0;            // Initialise l'indicateur de sortie à 0
+
+    if (pid) {
+        // Code du processus parent
+        do {
+            wait(&status);     // Attend que le processus enfant change d'état
+            childExited = status;  // Stocke le statut retourné
+            // Vérifie si le processus enfant s'est terminé normalement ou a été stoppé
+            if ((status & 0x7F) == 0 || ((status & 0x7F) + 1) >> 1 > 0) {
+                puts("Child is exiting...");
+                return 0;
+            }
+            // Surveille les tentatives d'utilisation de l'appel système exec
+            waitFlag = ptrace(PTRACE_PEEKUSER, pid, 44, 0);
+        } while (waitFlag != 11);
+        puts("No exec() for you");
+        kill(pid, SIGKILL);  // Envoie un signal pour tuer le processus enfant
+    } else {
+        // Code du processus enfant
+        prctl(PR_SET_PDEATHSIG, SIGKILL);  // Assure que le processus enfant est tué si le parent meurt
+        ptrace(PTRACE_TRACEME, 0, 0, 0);   // Trace ce processus enfant
+        puts("Give me some shellcode, k");
+        gets(buffer);  // ATTENTION: `gets()` est dangereux et doit être évité
+    }
+    return 0;
+}

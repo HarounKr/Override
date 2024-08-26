@@ -1,5 +1,5 @@
 1) Transfert du fichier avec SCP en utilisant un port spécifié :
-    scp -P 22222 level01@localhost:/home/users/level01/level01 .
+    scp -P 22222 level03@localhost:/home/users/level03/level03 .
 
 2) On decompile le binaire, on obtient son code, ici les sécurités STACK CANARY et NX sont actives donc ca limite l'execution de code arbitraire ou corruption de la pile
 
@@ -56,3 +56,8 @@
     level04
     $ cat /home/users/level04/.pass
     kgv3tkEb9h2mLkRsPkXRfc2mHbjMxQzvb2FrgKkf
+
+
+Ressources :
+    https://en.wikipedia.org/wiki/XOR_cipher
+    https://xor.pw/#
