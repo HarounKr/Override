@@ -1,0 +1,10 @@
+- Les permissions du fichier **level00** sont configurées avec **SUID** pour l'utilisateur **level01** :  
+```bash
+-rwsr-s---+ 1 level01 users 7280 Sep 10 2016 level00
+```
+Ce paramètre permet au fichier d'être exécuté avec les droits de l'utilisateur level01, même si un autre utilisateur lance l'exécution.  
+
+- Analyse du binaire avec l'outil Ghidra pour comprendre son fonctionnement interne.  
+
+- Le fichier contient une condition spécifique :  
+  si la valeur saisie (récupérée via scanf) est égale à 5276, alors la commande `/bin/sh` est exécutée via la fonction `system()` , permettant un accès au shell.

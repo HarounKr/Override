@@ -5,8 +5,9 @@
     Le code ici prend deux entrees utilisateur : Un login et un serial, puis execute des operation XOR sur le login afin d'obtenir un resultat qui sera egal au serial
     Si le login et le serial sont egaux, on obient un system("/bin/sh");
 
-3) Solution:
-    Pour trouver le serial, on peut recuperer cette partie du code et l'executer avec n'importe quelle string avec min 5 char et max 32 :
+3) Solution:  
+    Pour trouver le serial, on peut recuperer cette partie du code et l'executer avec n'importe quelle string avec min 5 char et max 32 :  
+    ```C
         v4 = (s[3] ^ 0x1337) + 6221293;
         for ( i = 0; i < v5; ++i )
         {
@@ -15,9 +16,13 @@
             v4 += (v4 ^ (unsigned int)s[i]) % 0x539;
         }
         return a2 != v4;
-    On peut creer un script qui le fait pour nous et on execute : 
+    ```
+    On peut creer un script qui le fait pour nous et on execute :  
+    ```bash
         python3 find_serial.py randomstring
         Serial is: 6233713
+    ```
+    ```bash
     level06@OverRide:~$ ./level06 
     ***********************************
     *		level06		  *
@@ -32,5 +37,6 @@
     level07
     $ cat /home/users/level07/.pass
     GbcPDRgsFK77LNnnuh7QyFYA2942Gp8yKj9KrWD8
+    ```
 
 
